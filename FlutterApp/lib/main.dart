@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -50,7 +53,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  // int _counter = 0;
+  final TextEditingController txtController = TextEditingController();
+  final TextEditingController scoreController = TextEditingController();
+  final TextEditingController answerController = TextEditingController();
+  final TextEditingController askController = TextEditingController();
 
   void _incrementCounter() {
     setState(() {
@@ -59,7 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // so that the display can reflect the updated values. If we changed
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
-      _counter++;
+      // _counter++;
     });
   }
 
@@ -67,7 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
   File? _imageFile;
 
   Future pickImage() async {
-    final pickedFile = await picker.getImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     setState(() {
       if (pickedFile != null) {
         _imageFile = File(pickedFile.path);
@@ -75,6 +82,36 @@ class _MyHomePageState extends State<MyHomePage> {
         print('No image selected.');
       }
     });
+  }
+
+  final apiUrl = 'https://eeea-222-252-4-89.ngrok-free.app/get_result';
+  
+  Future onGetResult() async {
+    Uint8List _bytes = await _imageFile.readAsBytes();
+    String _base64String = base64.encode(_bytes);
+    
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      // headers: <String, String>{
+      //   'Content-Type': 'application/json; charset=UTF-8',
+      // },
+      body: jsonEncode(
+        {
+          'question': askController.text,
+          'sample': answerController.text,
+          'grade': scoreController.text,
+          'images': [
+              base64Image
+            ],
+        }
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      txtController.text = response.body;
+    } else {
+      txtController.text = 'Request failed with status: ${response.statusCode}';
+    }
   }
 
   @override
@@ -130,53 +167,93 @@ class _MyHomePageState extends State<MyHomePage> {
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   children: [
-// Nhập tên đăng nhập
-                    Container(
-                      margin: EdgeInsets.only(left: 20, right: 20, top: 30),
-                      padding: EdgeInsets.only(left: 20, right: 20),
-                      width: width > 700 ? 450 : null,
-                      height: 50,
-                      child: TextField(
-                          style: TextStyle(
-                            color: Color.fromARGB(255, 0, 8, 50),
-                            fontSize: 15,
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            margin: EdgeInsets.only(left: 20, right: 10, top: 30),
+                            padding: EdgeInsets.only(left: 20, right: 0),
+                            height: 50,
+                            child: 
+                              TextField(
+                                controller: askController,
+                                style: TextStyle(
+                                  color: Color.fromARGB(255, 0, 8, 50),
+                                  fontSize: 15,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: "Question",
+                                  labelStyle: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 15,
+                                  ),
+                                  border: InputBorder.none,
+                                  focusedErrorBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Color.fromARGB(255, 0, 8, 50))),
+                                  errorBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Color.fromARGB(255, 0, 8, 50))),
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide:
+                                          BorderSide(color: Color(0xFFEEEEEE))),
+                                  focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Color.fromARGB(255, 0, 8, 50))),
+                                  filled: true,
+                                ),
+                              ),
                           ),
-                          onChanged: (value){
-                            setState(() {
-                              
-                            });
-                          },
-                          decoration: InputDecoration(
-                            labelText: "Question",
-                            labelStyle: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 15,
-                            ),
-                            border: InputBorder.none,
-                            focusedErrorBorder: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                    color: Color.fromARGB(255, 0, 8, 50))),
-                            errorBorder: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                    color: Color.fromARGB(255, 0, 8, 50))),
-                            enabledBorder: OutlineInputBorder(
-                                borderSide:
-                                    BorderSide(color: Color(0xFFEEEEEE))),
-                            focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                    color: Color.fromARGB(255, 0, 8, 50))),
-                            filled: true,
-          ),
-                          
                         ),
+                        Expanded(
+                          flex: 1,
+                          child: Container(
+                            margin: EdgeInsets.only(left: 0, right: 20, top: 30),
+                            padding: EdgeInsets.only(left: 20, right: 20),
+                            width: width > 700 ? 450 : null,
+                            height: 50,
+                            child: 
+                              TextField(
+                                controller: scoreController,
+                                style: TextStyle(
+                                  color: Color.fromARGB(255, 0, 8, 50),
+                                  fontSize: 15,
+                                ),
+                                decoration: InputDecoration(
+                                  labelText: "Score",
+                                  labelStyle: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 15,
+                                  ),
+                                  border: InputBorder.none,
+                                  focusedErrorBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Color.fromARGB(255, 0, 8, 50))),
+                                  errorBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Color.fromARGB(255, 0, 8, 50))),
+                                  enabledBorder: OutlineInputBorder(
+                                      borderSide:
+                                          BorderSide(color: Color(0xFFEEEEEE))),
+                                  focusedBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                          color: Color.fromARGB(255, 0, 8, 50))),
+                                  filled: true,
+                                ),
+                              ),
+                          ),
+                        ),
+                      ],
                     ),
-// Mật khẩu
+                    
                     Container(
                       margin: EdgeInsets.only(left: 20, right: 20, top: 30),
                       padding: EdgeInsets.only(left: 20, right: 20),
                       width: width > 700 ? 450 : null,
                       height: 50,
                       child: TextField(
+                          controller: answerController,
                           style: TextStyle(
                             color: Color.fromARGB(255, 0, 8, 50),
                             fontSize: 15,
@@ -206,33 +283,72 @@ class _MyHomePageState extends State<MyHomePage> {
                                 borderSide: BorderSide(
                                     color: Color.fromARGB(255, 0, 8, 50))),
                             filled: true,
-          ),
-                          
+                          ),
                         ),
                     ),
+
                     SizedBox(
                       height: 20,
                     ),
 
-                    if (_imageFile != null)
-            Image.file(_imageFile!),
-          
-          TextButton(
-            child: Text("Select Image"),
-            onPressed: pickImage,
-          ),
-          TextButton(
-            child: Text("Upload Image"),
-            onPressed: () {
-              if (_imageFile != null) {
-              
-              }
-            },
-          ),
+                    if (_imageFile != null) Image.file(_imageFile!),
+
+                    FilledButton(
+                      child: Text("Select Image"),
+                      onPressed: pickImage,
+                    ),
+                    
+                    SizedBox(
+                      height: 20,
+                    ),
+
+                    FilledButton(
+                      child: Text("Upload Image"),
+                      onPressed: onGetResult,
+                    ),
+
+                    Container(
+                      margin: EdgeInsets.only(left: 20, right: 20, top: 30),
+                      padding: EdgeInsets.only(left: 20, right: 20),
+                      width: width > 700 ? 450 : null,
+                      height: 50,
+                      child: TextField(
+                          controller: txtController,
+                          style: TextStyle(
+                            color: Color.fromARGB(255, 0, 8, 50),
+                            fontSize: 15,
+                          ),
+                          onChanged: (value){
+                            setState(() {
+                              
+                            });
+                          },
+                          decoration: InputDecoration(
+                            labelText: "Response",
+                            labelStyle: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 15,
+                            ),
+                            border: InputBorder.none,
+                            focusedErrorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Color.fromARGB(255, 0, 8, 50))),
+                            errorBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Color.fromARGB(255, 0, 8, 50))),
+                            enabledBorder: OutlineInputBorder(
+                                borderSide:
+                                    BorderSide(color: Color(0xFFEEEEEE))),
+                            focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                    color: Color.fromARGB(255, 0, 8, 50))),
+                            filled: true,
+                          ),
+                        ),
+                    ),
                   ],
                 ),
               )),
-
 
       // Thêm phần chọn ảnh vào đây
       
