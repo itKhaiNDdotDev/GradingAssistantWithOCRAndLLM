@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:grading_assistant/result.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -72,47 +73,61 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final picker = ImagePicker();
   File? _imageFile;
+  String _base64String = '';
 
   Future pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    setState(() {
-      if (pickedFile != null) {
-        _imageFile = File(pickedFile.path);
-        final abc = pickedFile.readAsBytes();
-        print(abc);
-      } else {
-        print('No image selected.');
-      }
-    });
+    if (pickedFile != null) {
+      _imageFile = File(pickedFile.path);
+      final bytesOfIamge = await pickedFile.readAsBytes();
+      setState(() {
+        _base64String = base64.encode(bytesOfIamge);
+      });
+    } else {
+      print('No image selected.');
+    }
   }
 
   final apiUrl = 'https://eeea-222-252-4-89.ngrok-free.app/get_result';
-  
+
   Future onGetResult() async {
     // Uint8List _bytes = await _imageFile.readAsBytes();
     // String _base64String = base64.encode(_bytes);
-    
+    try
+    {
     final response = await http.post(
       Uri.parse(apiUrl),
       // headers: <String, String>{
       //   'Content-Type': 'application/json; charset=UTF-8',
       // },
-      body: jsonEncode(
-        {
-          'question': askController.text,
-          'sample': answerController.text,
-          'grade': scoreController.text,
-          'images': [
-              ''
-            ],
-        }
-      ),
+      body: jsonEncode({
+        'question': askController.text,
+        'sample': answerController.text,
+        'grade': scoreController.text,
+        'images': [_base64String]
+      }),
     );
 
     if (response.statusCode == 200) {
       txtController.text = response.body;
+      // Navigate to the result screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResultScreen(result: response.body),
+        ),
+      );
     } else {
       txtController.text = 'Request failed with status: ${response.statusCode}';
+    }
+    }
+    catch(ex) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResultScreen(result: ex.toString()),
+        ),
+      );
     }
   }
 
@@ -164,109 +179,28 @@ class _MyHomePageState extends State<MyHomePage> {
       // ),
 
       body: SingleChildScrollView(
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              child: Form(
-                autovalidateMode: AutovalidateMode.onUserInteraction,
-                child: Column(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Form(
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Container(
-                            margin: EdgeInsets.only(left: 20, right: 10, top: 30),
-                            padding: EdgeInsets.only(left: 20, right: 0),
-                            height: 50,
-                            child: 
-                              TextField(
-                                controller: askController,
-                                style: TextStyle(
-                                  color: Color.fromARGB(255, 0, 8, 50),
-                                  fontSize: 15,
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: "Question",
-                                  labelStyle: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 15,
-                                  ),
-                                  border: InputBorder.none,
-                                  focusedErrorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: Color.fromARGB(255, 0, 8, 50))),
-                                  errorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: Color.fromARGB(255, 0, 8, 50))),
-                                  enabledBorder: OutlineInputBorder(
-                                      borderSide:
-                                          BorderSide(color: Color(0xFFEEEEEE))),
-                                  focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: Color.fromARGB(255, 0, 8, 50))),
-                                  filled: true,
-                                ),
-                              ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Container(
-                            margin: EdgeInsets.only(left: 0, right: 20, top: 30),
-                            padding: EdgeInsets.only(left: 20, right: 20),
-                            width: width > 700 ? 450 : null,
-                            height: 50,
-                            child: 
-                              TextField(
-                                controller: scoreController,
-                                style: TextStyle(
-                                  color: Color.fromARGB(255, 0, 8, 50),
-                                  fontSize: 15,
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: "Score",
-                                  labelStyle: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 15,
-                                  ),
-                                  border: InputBorder.none,
-                                  focusedErrorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: Color.fromARGB(255, 0, 8, 50))),
-                                  errorBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: Color.fromARGB(255, 0, 8, 50))),
-                                  enabledBorder: OutlineInputBorder(
-                                      borderSide:
-                                          BorderSide(color: Color(0xFFEEEEEE))),
-                                  focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                          color: Color.fromARGB(255, 0, 8, 50))),
-                                  filled: true,
-                                ),
-                              ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    Container(
-                      margin: EdgeInsets.only(left: 20, right: 20, top: 30),
-                      padding: EdgeInsets.only(left: 20, right: 20),
-                      width: width > 700 ? 450 : null,
-                      height: 50,
-                      child: TextField(
-                          controller: answerController,
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        margin: EdgeInsets.only(left: 20, right: 10, top: 30),
+                        padding: EdgeInsets.only(left: 20, right: 0),
+                        // height: 50,
+                        child: TextField(
+                          maxLines: 1,
+                          controller: askController,
                           style: TextStyle(
                             color: Color.fromARGB(255, 0, 8, 50),
                             fontSize: 15,
                           ),
-                          onChanged: (value){
-                            setState(() {
-                              
-                            });
-                          },
                           decoration: InputDecoration(
-                            labelText: "Sample Answer",
+                            labelText: "Question",
                             labelStyle: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 15,
@@ -287,46 +221,23 @@ class _MyHomePageState extends State<MyHomePage> {
                             filled: true,
                           ),
                         ),
+                      ),
                     ),
-
-                    SizedBox(
-                      height: 20,
-                    ),
-
-                    if (_imageFile != null) Image.file(_imageFile!),
-
-                    FilledButton(
-                      child: Text("Select Image"),
-                      onPressed: pickImage,
-                    ),
-                    
-                    SizedBox(
-                      height: 20,
-                    ),
-
-                    FilledButton(
-                      child: Text("Upload Image"),
-                      onPressed: onGetResult,
-                    ),
-
-                    Container(
-                      margin: EdgeInsets.only(left: 20, right: 20, top: 30),
-                      padding: EdgeInsets.only(left: 20, right: 20),
-                      width: width > 700 ? 450 : null,
-                      height: 50,
-                      child: TextField(
-                          controller: txtController,
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        margin: EdgeInsets.only(left: 0, right: 10, top: 30),
+                        padding: EdgeInsets.only(left: 10, right: 10),
+                        // width: width > 700 ? 450 : null,
+                        // height: 50,
+                        child: TextField(
+                          controller: scoreController,
                           style: TextStyle(
                             color: Color.fromARGB(255, 0, 8, 50),
                             fontSize: 15,
                           ),
-                          onChanged: (value){
-                            setState(() {
-                              
-                            });
-                          },
                           decoration: InputDecoration(
-                            labelText: "Response",
+                            labelText: "Score",
                             labelStyle: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 15,
@@ -347,21 +258,113 @@ class _MyHomePageState extends State<MyHomePage> {
                             filled: true,
                           ),
                         ),
+                      ),
                     ),
                   ],
                 ),
-              )),
+                Container(
+                  margin: EdgeInsets.only(left: 20, right: 20, top: 30),
+                  padding: EdgeInsets.only(left: 20, right: 20),
+                  width: width > 700 ? 450 : null,
+                  // height: 50,
+                  child: TextField(
+                    maxLines: 3,
+                    minLines: 3,
+                    controller: answerController,
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 8, 50),
+                      fontSize: 15,
+                    ),
+                    onChanged: (value) {
+                      setState(() {});
+                    },
+                    decoration: InputDecoration(
+                      labelText: "Sample Answer",
+                      labelStyle: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 15,
+                      ),
+                      border: InputBorder.none,
+                      focusedErrorBorder: OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
+                      errorBorder: OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
+                      enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFFEEEEEE))),
+                      focusedBorder: OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
+                      filled: true,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                if (_imageFile != null) Image.file(_imageFile!),
+                FilledButton(
+                  child: Text("Select Image"),
+                  onPressed: pickImage,
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                FilledButton(
+                  child: Text("Upload Image"),
+                  onPressed: onGetResult,
+                ),
+                Container(
+                  margin: EdgeInsets.only(left: 20, right: 20, top: 30),
+                  padding: EdgeInsets.only(left: 20, right: 20),
+                  width: width > 700 ? 450 : null,
+                  height: 50,
+                  child: TextField(
+                    controller: txtController,
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 8, 50),
+                      fontSize: 15,
+                    ),
+                    onChanged: (value) {
+                      setState(() {});
+                    },
+                    decoration: InputDecoration(
+                      labelText: "Response",
+                      labelStyle: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 15,
+                      ),
+                      border: InputBorder.none,
+                      focusedErrorBorder: OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
+                      errorBorder: OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
+                      enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFFEEEEEE))),
+                      focusedBorder: OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
+                      filled: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )),
 
       // Thêm phần chọn ảnh vào đây
-      
+
       // Hiển thị ảnh đã chọn ở đây
 
       // Nút bẩm gửi ảnh qua API ở đây
-      
+
       floatingActionButton: FloatingActionButton(
         onPressed: _incrementCounter,
         tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.home),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
