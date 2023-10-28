@@ -55,7 +55,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   // int _counter = 0;
-  final TextEditingController txtController = TextEditingController();
   final TextEditingController scoreController = TextEditingController();
   final TextEditingController answerController = TextEditingController();
   final TextEditingController askController = TextEditingController();
@@ -83,23 +82,14 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _base64String = base64.encode(bytesOfIamge);
       });
-    } else {
-      print('No image selected.');
     }
   }
 
   final apiUrl = 'https://eeea-222-252-4-89.ngrok-free.app/get_result';
 
   Future onGetResult() async {
-    // Uint8List _bytes = await _imageFile.readAsBytes();
-    // String _base64String = base64.encode(_bytes);
-    try
-    {
     final response = await http.post(
       Uri.parse(apiUrl),
-      // headers: <String, String>{
-      //   'Content-Type': 'application/json; charset=UTF-8',
-      // },
       body: jsonEncode({
         'question': askController.text,
         'sample': answerController.text,
@@ -109,25 +99,21 @@ class _MyHomePageState extends State<MyHomePage> {
     );
 
     if (response.statusCode == 200) {
-      txtController.text = response.body;
       // Navigate to the result screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ResultScreen(result: response.body),
-        ),
-      );
-    } else {
-      txtController.text = 'Request failed with status: ${response.statusCode}';
-    }
-    }
-    catch(ex) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ResultScreen(result: ex.toString()),
-        ),
-      );
+      try {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResultScreen(
+              textOCROutput: jsonDecode(response.body)['textOCROutput'],
+              comment: jsonDecode(response.body)['commnent'],
+              grade: jsonDecode(response.body)['suggestGrade'].toString(),
+            ),
+          ),
+        );
+      } catch (e, stackTrace) {
+        print(e.toString());
+      }
     }
   }
 
@@ -226,8 +212,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     Expanded(
                       flex: 1,
                       child: Container(
-                        margin: EdgeInsets.only(left: 0, right: 10, top: 30),
-                        padding: EdgeInsets.only(left: 10, right: 10),
+                        margin: EdgeInsets.only(left: 0, right: 40, top: 30),
                         // width: width > 700 ? 450 : null,
                         // height: 50,
                         child: TextField(
@@ -315,42 +300,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Text("Upload Image"),
                   onPressed: onGetResult,
                 ),
-                Container(
-                  margin: EdgeInsets.only(left: 20, right: 20, top: 30),
-                  padding: EdgeInsets.only(left: 20, right: 20),
-                  width: width > 700 ? 450 : null,
-                  height: 50,
-                  child: TextField(
-                    controller: txtController,
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 0, 8, 50),
-                      fontSize: 15,
-                    ),
-                    onChanged: (value) {
-                      setState(() {});
-                    },
-                    decoration: InputDecoration(
-                      labelText: "Response",
-                      labelStyle: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 15,
-                      ),
-                      border: InputBorder.none,
-                      focusedErrorBorder: OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
-                      errorBorder: OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
-                      enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFFEEEEEE))),
-                      focusedBorder: OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: Color.fromARGB(255, 0, 8, 50))),
-                      filled: true,
-                    ),
-                  ),
-                ),
               ],
             ),
           )),
@@ -360,12 +309,6 @@ class _MyHomePageState extends State<MyHomePage> {
       // Hiển thị ảnh đã chọn ở đây
 
       // Nút bẩm gửi ảnh qua API ở đây
-
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.home),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
