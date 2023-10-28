@@ -78,6 +78,8 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       if (pickedFile != null) {
         _imageFile = File(pickedFile.path);
+        final abc = pickedFile.readAsBytes();
+        print(abc);
       } else {
         print('No image selected.');
       }
@@ -87,8 +89,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final apiUrl = 'https://eeea-222-252-4-89.ngrok-free.app/get_result';
   
   Future onGetResult() async {
-    Uint8List _bytes = await _imageFile.readAsBytes();
-    String _base64String = base64.encode(_bytes);
+    // Uint8List _bytes = await _imageFile.readAsBytes();
+    // String _base64String = base64.encode(_bytes);
     
     final response = await http.post(
       Uri.parse(apiUrl),
@@ -101,7 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
           'sample': answerController.text,
           'grade': scoreController.text,
           'images': [
-              base64Image
+              ''
             ],
         }
       ),
