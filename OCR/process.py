@@ -59,8 +59,11 @@ def cut_box_and_save(box, img, img_name, save_path, box_index):
 
 def draw_det_res(dt_boxes, config, img, img_name, save_path):
     # Sort the bounding boxes by their top-left coordinates (left to right, top to bottom)
-    sorted_boxes = sorted(dt_boxes, key=lambda box: (
-        min(point[1] for point in box), min(point[0] for point in box)))
+    # sorted_boxes = sorted(dt_boxes, key=lambda box: (
+    #     min(point[1] for point in box), min(point[0] for point in box)))
+
+    sorted_boxes = sorted(np.float32(dt_boxes), key=lambda c: (
+        cv2.boundingRect(c)[1], cv2.boundingRect(c)[0]))
 
     saved_paths = []
     for box_index, box in enumerate(sorted_boxes):

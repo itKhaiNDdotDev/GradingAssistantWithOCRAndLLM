@@ -63,7 +63,7 @@ def build_model(config):
 
 if __name__ == '__main__':
     model, vocab = build_model(config=config)
-    img = Image.open('test1.png')
+    img = Image.open('test3.png')
     detector = Predictor(config=config)
     res = detector.predict(img=img)
     print(res)
