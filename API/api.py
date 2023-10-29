@@ -1,6 +1,10 @@
+import os
 import asyncio
 import sys
+sys.path.append("../OCRAutoGradingApp")
 import json
+import random
+import time
 
 from PIL import Image
 from io import BytesIO
@@ -11,6 +15,9 @@ from fastapi import Response, Request
 from fastapi.responses import JSONResponse
 import uvicorn
 from uvicorn import Server, Config
+
+from llm_function import get_literature_result, get_ielts_result, refine_en_text, refine_vi_text
+from ocr import det_and_rec
 
 ########################################
 ############# FUNCTION #################
@@ -48,22 +55,33 @@ async def get_result(request: Request):
     grade = data["grade"]
     base64_images = data["images"]
     
-    for base64_image in base64_images:
-        try:
+    folder_name = f"images/folder_{time.time()}"
+    os.makedirs(folder_name, exist_ok=False)
+    
+    for idx, base64_image in enumerate(base64_images):
+        # try:
             image = read_base64_image(base64_image)
             
             # Specify the file path where you want to save the image
-            file_path = f"images/output_image_{base64_image[:10]}.jpg"  # Replace with your desired file path and name
+            file_path = f"{folder_name}/output_image_{idx}.jpg"  # Replace with your desired file path and name
 
             # Save the image to the specified file
             save_image_to_file(image, file_path)
-        except:
-            return JSONResponse(content={"message": "data not allow"}, status_code=400)
+        # except:
+        #     return JSONResponse(content={"message": "data not allow"}, status_code=400)
+        
+    # processing  
+    if sample == "ielts":
+        ocr_output = refine_en_text(det_and_rec(folder_name))
+        score, comment = get_ielts_result(question, ocr_output)
+    else:
+        ocr_output = refine_vi_text(det_and_rec(folder_name))
+        score, comment = get_literature_result(question, sample, grade, ocr_output)
     
     ## Return 
-    content = {"textOCROutput": "Kết quả đầu ra từ OCR đã qua chọn lọc xử lý các đoạn trùng để ở đây (bài làm dạng text)",
-                "commnent": f"{question}, {sample}, {grade}",
-                "suggestGrade": 5.25}
+    content = {"textOCROutput": ocr_output,
+                "commnent": comment,
+                "suggestGrade": score}
     return  JSONResponse(content=content)
 
 ##########################################
